@@ -1,26 +1,31 @@
 # DDBuffer
 
-TODO: Write me
+Provides a way to buffer Ruby enumerables/enumerators.
 
-## Installation
-
-Add this line to your application's Gemfile:
+This is particularly useful when reading from a slow source and reading to a slow sink, because the two will be able to work concurrently. For example:
 
 ```ruby
-gem 'ddbuffer'
+# Read articles (an Enumerator)
+articles = my_web_service.each_article
+
+# Buffer 100 articles at a time
+articles = DDBuffer.new(100).call(articles)
+
+# Write buffered articles
+articles.each_slice(50) do |slice|
+  my_slow_db.insert_articles(slice)
+end
 ```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
-    $ gem install ddbuffer
 
 ## Usage
 
-TODO: Write usage instructions here
+To install, add the `ddbuffer` gem to your Gemfile, and run `bundle`.
+
+To buffer an enumerable `enum` with a buffer size of `size`:
+
+```ruby
+buffered_enum = DDBuffer.new(size).call(enum)
+```
 
 ## Development
 
