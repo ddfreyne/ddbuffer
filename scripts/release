@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'fileutils'
+require 'octokit'
+
+CONFIG_GEM_NAME = 'ddbuffer'
+CONFIG_REPO_NAME = 'ddfreyne/ddbuffer'
+CONFIG_VERSION_FILE = '../lib/ddbuffer/version'
+CONFIG_VERSION_PROC = -> { DDBuffer::VERSION }
+
+def run(*args)
+  puts 'I will execute the following:'
+  puts '    ' + args.map { |a| a =~ /\s/ ? a.inspect : a }.join(' ')
+  print 'Is this correct? [y/N] '
+  res = gets
+  unless res.strip.casecmp('y').zero?
+    $stderr.puts 'Answer was not Y; release aborted.'
+    exit 1
+  end
+
+  system('echo', *args)
+  system(*args)
+
+  print 'Continue? [y/N] '
+  res = gets
+  unless res.strip.casecmp('y').zero?
+    $stderr.puts 'Answer was not Y; release aborted.'
+    exit 1
+  end
+end
+
+puts '=== Logging in to GitHub’s API…'
+client = Octokit::Client.new(netrc: true)
+puts
+
+puts '=== Deleting old *.gem files…'
+Dir['*.gem'].each do |fn|
+  puts "  #{fn}…"
+  FileUtils.rm_f(fn)
+end
+puts
+
+puts '=== Verifying presence of release date…'
+unless File.readlines('NEWS.md').drop(2).first =~ / \(\d{4}-\d{2}-\d{2}\)$/
+  $stderr.puts 'No proper release date found!'
+  exit 1
+end
+puts
+
+puts '=== Building new gem…'
+run('gem', 'build', "#{CONFIG_GEM_NAME}.gemspec")
+puts
+
+puts '=== Reading version…'
+require_relative CONFIG_VERSION_FILE
+puts "Version = #{CONFIG_VERSION_PROC.call}"
+puts
+
+puts '=== Verifying that release does not yet exist…'
+releases = client.releases(CONFIG_REPO_NAME)
+release = releases.find { |r| r.tag_name == CONFIG_VERSION_PROC.call }
+if release
+  $stderr.puts 'Release already exists!'
+  $stderr.puts 'ABORTED!'
+  exit 1
+end
+puts
+
+puts '=== Creating Git tag…'
+run('git', 'tag', '--sign', '--annotate', CONFIG_VERSION_PROC.call, '--message', "Version #{CONFIG_VERSION_PROC.call}")
+puts
+
+puts '=== Pushing Git data…'
+run('git', 'push', 'origin', '--tags')
+puts
+
+puts '=== Pushing gem…'
+run('gem', 'push', "#{CONFIG_GEM_NAME}-#{CONFIG_VERSION_PROC.call}.gem")
+puts
+
+puts '=== Reading release notes…'
+release_notes =
+  File.readlines('NEWS.md')
+      .drop(4)
+      .take_while { |l| l !~ /^## / }
+      .join
+puts
+
+puts '=== Creating release on GitHub…'
+sleep 3 # Give GitHub some time to detect the new tag
+is_prerelease = CONFIG_VERSION_PROC.call =~ /a|b|rc/ || CONFIG_VERSION_PROC.call =~ /^0/
+client.create_release(
+  CONFIG_REPO_NAME, CONFIG_VERSION_PROC.call,
+  prerelease: !is_prerelease.nil?,
+  body: release_notes
+)
+puts
+
+puts 'DONE!'
