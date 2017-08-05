@@ -80,5 +80,28 @@ RSpec.describe DDBuffer do
         expect(subject.take(3).to_a).to eq([1, 2, 3])
       end
     end
+
+    context 'slow source' do
+      let(:enum) do
+        Enumerator.new do |y|
+          20.times do |i|
+            y << i
+            sleep 0.1
+          end
+        end
+      end
+
+      it 'takes a while to take elements when unbuffered' do
+        expect { subject.take(5).to_a }
+          .to finish_in(0.5, 0.1)
+      end
+
+      it 'takes no time to take elements when buffered' do
+        subject
+        sleep 0.5
+        expect { subject.take(5).to_a }
+          .to finish_in(0.0, 0.1)
+      end
+    end
   end
 end
