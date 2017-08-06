@@ -1,3 +1,8 @@
+[![Gem version](http://img.shields.io/gem/v/ddbuffer.svg)](http://rubygems.org/gems/ddbuffer)
+[![Build status](http://img.shields.io/travis/ddfreyne/ddbuffer.svg)](https://travis-ci.org/ddfreyne/ddbuffer)
+[![Code Climate](http://img.shields.io/codeclimate/github/ddfreyne/ddbuffer.svg)](https://codeclimate.com/github/ddfreyne/ddbuffer)
+[![Code Coverage](https://img.shields.io/codecov/c/github/ddfreyne/ddbuffer.svg)](https://codecov.io/gh/ddfreyne/ddbuffer)
+
 # DDBuffer
 
 Provides a way to buffer Ruby enumerables/enumerators.
