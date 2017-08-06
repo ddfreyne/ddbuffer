@@ -2,6 +2,12 @@
 
 require 'ddbuffer'
 
+require 'simplecov'
+SimpleCov.start
+
+require 'codecov'
+SimpleCov.formatter = SimpleCov::Formatter::Codecov
+
 require 'fuubar'
 
 RSpec.configure do |config|
