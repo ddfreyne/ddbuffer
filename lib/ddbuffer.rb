@@ -12,7 +12,7 @@ class DDBuffer
         begin
           enum.each { |e| queue << e }
           queue << STOP_OK
-        rescue => e
+        rescue StandardError => e
           queue << STOP_ERR
           queue << e
         end
